@@ -11,6 +11,9 @@
 		var xhr = new XMLHttpRequest()
 		var data = new FormData(this)
 		var status = document.getElementById('status')
+		status.style.color = 'inherit'
+		status.innerHTML = 'Cargando...'
+		data.append('security', ajax_object.ajax_nonce)
 		console.log(data)
 		xhr.open(this.method, ajax_object.ajax_url)
 		xhr.responseType = 'json'
@@ -41,7 +44,7 @@
 
 		typingTimer = setTimeout(function(){
 			document.getElementById('message_chars').innerHTML = max_length - self.textLength
-		}, 250)
+		}, 200)
 	}
 	function onKeyDown (evt) {
 		clearTimeout(typingTimer)

@@ -4,7 +4,7 @@
 	Plugin URI: http://quiroa.me/plugins/parse-push-wordpress/
 	Description: 
 	Author: Steven Quiroa
-	Version: 0.0.1
+	Version: 1.0.0
 	Author URI: http://quiroa.me
 	License: GPLv2 or later
 	License URI: http://www.gnu.org/licenses/gpl-2.0.html
@@ -35,14 +35,15 @@ function my_enqueue($hook) {
 	// die($hook);
     if( 'toplevel_page_parse-push' != $hook ) return;
         
-	wp_enqueue_script( 'ajax-script', plugins_url( '/assets/parse-push.js', __FILE__ ), array(), '0.0.1', true);
+	wp_enqueue_script( 'ajax-script', plugins_url( '/assets/parse-push.js', __FILE__ ), array(), '1.0.0', true);
 
 	$max_length = (int) esc_attr( get_option('pp-max-length') );
 	// in JavaScript, object properties are accessed as ajax_object.ajax_url, ajax_object.we_value
 	wp_localize_script( 'ajax-script', 'ajax_object',
             array( 
             	'ajax_url' => admin_url( 'admin-ajax.php' ), 
-            	'max_length' => ($max_length > 0) ? ($max_length) : 100  
+            	'max_length' => ($max_length > 0) ? ($max_length) : 100,
+            	'ajax_nonce' => wp_create_nonce( "pp-super-security-string" )
             )  
 	);
 }
@@ -78,7 +79,7 @@ function parse_push_sender(){
 		        	<fieldset><legend class="screen-reader-text"><span>Dispositivos</span></legend>
 					<label for="scope_ios">
 						<input name="scope" id="scope_all" value="all" checked="checked" type="radio">
-						Todos</label>
+						All</label>
 					<br>
 					<label for="scope_android">
 						<input name="scope" id="scope_android" value="android" type="radio"> 
@@ -160,9 +161,9 @@ function register_parse_push_settings(){
 }
 
 add_action( 'wp_ajax_send_push_parse', 'send_push_parse_callback' );
-add_action( 'admin_post_send_push_parse', 'send_push_parse_callback' );
 
 function send_push_parse_callback(){
+	check_ajax_referer( 'pp-super-security-string', 'security' );
 
 	$message = sanitize_text_field( $_POST['message'] );
 
@@ -172,7 +173,6 @@ function send_push_parse_callback(){
 		)
 	);
 	
-
 	$app_id = esc_attr( get_option('pp-application_id') );
 	$rest_key = esc_attr( get_option('pp-rest_api_key') );
 	$master_key = esc_attr( get_option('pp-master_api_key') );
@@ -206,12 +206,7 @@ function send_push_parse_callback(){
 		wp_send_json( $response );
 	}
 
-	if(!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest') {
-		wp_redirect( '/wp-admin/', 302 );
-	}else{
-		$res = $result;
-		status_header(200);
-		wp_send_json( $res );
-	}
-
+	$res = $result;
+	status_header(200);
+	wp_send_json( $res );
 }
